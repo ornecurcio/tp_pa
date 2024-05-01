@@ -1,7 +1,9 @@
 import datetime
 import numpy as np
 import pandas as pd
-import datetime
+from dotenv import load_dotenv 
+import os
+import psycopg2
 from airflow.models.dag import DAG
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
@@ -15,13 +17,44 @@ with DAG(
     catchup=False,
 ) as dag:
 
-    def join_csv(date,file1, file2, output_file):
+    load_dotenv()
+    engine = psycopg2.connect(
+        database=os.getenv("DB_NAME"),
+        user=os.getenv("DB_USERNAME"),
+        password=os.getenv("DB_PASSWORD"), 
+        host=os.getenv("DB_HOST"),
+        port=os.getenv("DB_PORT")
+    )
+
+    # def join_csv(date,file1, file2, output_file):
+    #     df1 = pd.read_csv(file1)
+    #     df2 = pd.read_csv(file2)
+    #     df_joined = pd.merge(df1, df2, on='advertiser_id')
+    #      # Filtrar por la fecha especificada
+    #     df_joined = df_joined[df_joined['date'] == date]
+    #     df_joined.to_csv(output_file, index=False)
+
+    def join_csv(date, file1, file2, **context):
+        # Leer los archivos CSV
         df1 = pd.read_csv(file1)
         df2 = pd.read_csv(file2)
-        df_joined = pd.merge(df1, df2, on='advertiser_id')
-         # Filtrar por la fecha especificada
-        df_joined = df_joined[df_joined['date'] == date]
-        df_joined.to_csv(output_file, index=False)
+        # Unir los DataFrames
+        df = pd.merge(df1, df2, on='advertiser_id')
+        # Filtrar por fecha
+        df = df[df['date'] == date]
+        # Empujar el DataFrame en XComs
+        context['task_instance'].xcom_push('data', df.to_json())
+
+    def top_product(output_file, **context):
+        # Traer el DataFrame de XComs
+        df_json = context['task_instance'].xcom_pull(task_ids='product_active_csv', key='data')
+        df = pd.read_json(df_json)
+        # Calcular el top product
+        top_20_products_per_advertiser = pd.DataFrame()
+        top_product = df['product_id'].value_counts().idxmax()
+
+        # Escribir el top product en la base de datos
+
     
     def top_product(file, output_file):
         # Leer el archivo CSV
@@ -54,16 +87,39 @@ with DAG(
         top_20_ctr = grouped.sort_values('ctr', ascending=False).head(20)
         # Guardar el resultado en un archivo CSV
         top_20_ctr.to_csv(output_file, index=False)
+    
 
     filter_data_product = PythonOperator(
         task_id='product_active_csv',
         python_callable=join_csv,
         op_kwargs={'date': f"{datetime.datetime.now().strftime('%Y-%m-%d')}",
-                   'file1': '/Users/ocurcio/Documents/MasterDataScience/ProgramacionAvanzada/TP/files/advertiser_ids.csv', 
-                   'file2': '/Users/ocurcio/Documents/MasterDataScience/ProgramacionAvanzada/TP/files/product_views.csv', 
-                   'output_file': f"/Users/ocurcio/Documents/MasterDataScience/ProgramacionAvanzada/TP/files/active/product_active_{datetime.datetime.now().strftime('%Y-%m-%d')}.csv" 
-                   }
+                'file1': '/Users/ocurcio/Documents/MasterDataScience/ProgramacionAvanzada/TP/files/advertiser_ids.csv', 
+                'file2': '/Users/ocurcio/Documents/MasterDataScience/ProgramacionAvanzada/TP/files/product_views.csv'},
+        provide_context=True  # Necesario para acceder a task_instance
     )
+
+    top_product_task = PythonOperator(
+        task_id='top_product',
+        python_callable=top_product,
+        provide_context=True,  # Necesario para acceder a task_instance
+        op_kwargs={'output_file': f"/Users/ocurcio/Documents/MasterDataScience/ProgramacionAvanzada/TP/files/active/top_product_{datetime.datetime.now().strftime('%Y-%m-%d')}.csv"}
+    )
+    # filter_data_product = PythonOperator(
+    #     task_id='product_active_csv',
+    #     python_callable=join_csv,
+    #     op_kwargs={'date': f"{datetime.datetime.now().strftime('%Y-%m-%d')}",
+    #                'file1': '/Users/ocurcio/Documents/MasterDataScience/ProgramacionAvanzada/TP/files/advertiser_ids.csv', 
+    #                'file2': '/Users/ocurcio/Documents/MasterDataScience/ProgramacionAvanzada/TP/files/product_views.csv', 
+    #                'output_file': f"/Users/ocurcio/Documents/MasterDataScience/ProgramacionAvanzada/TP/files/active/product_active_{datetime.datetime.now().strftime('%Y-%m-%d')}.csv" 
+    #                }
+    # )
+    # top_product_task = PythonOperator(
+    #     task_id='top_product',
+    #     python_callable=top_product,
+    #     op_kwargs={'file': f"/Users/ocurcio/Documents/MasterDataScience/ProgramacionAvanzada/TP/files/active/product_active_{datetime.datetime.now().strftime('%Y-%m-%d')}.csv",
+    #                'output_file': f"/Users/ocurcio/Documents/MasterDataScience/ProgramacionAvanzada/TP/files/active/top_product_{datetime.datetime.now().strftime('%Y-%m-%d')}.csv"
+    #                }
+    # )
     filter_data_ads = PythonOperator(
         task_id='ads_active_csv',
         python_callable=join_csv,
@@ -71,13 +127,6 @@ with DAG(
                    'file1': '/Users/ocurcio/Documents/MasterDataScience/ProgramacionAvanzada/TP/files/advertiser_ids.csv', 
                    'file2': '/Users/ocurcio/Documents/MasterDataScience/ProgramacionAvanzada/TP/files/ads_views.csv', 
                    'output_file': f"/Users/ocurcio/Documents/MasterDataScience/ProgramacionAvanzada/TP/files/active/ads_active_{datetime.datetime.now().strftime('%Y-%m-%d')}.csv"
-                   }
-    )
-    top_product_task = PythonOperator(
-        task_id='top_product',
-        python_callable=top_product,
-        op_kwargs={'file': f"/Users/ocurcio/Documents/MasterDataScience/ProgramacionAvanzada/TP/files/active/product_active_{datetime.datetime.now().strftime('%Y-%m-%d')}.csv",
-                   'output_file': f"/Users/ocurcio/Documents/MasterDataScience/ProgramacionAvanzada/TP/files/active/top_product_{datetime.datetime.now().strftime('%Y-%m-%d')}.csv"
                    }
     )
     top_ctr_task = PythonOperator(
