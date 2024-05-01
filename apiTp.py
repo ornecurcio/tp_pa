@@ -1,53 +1,83 @@
 from fastapi import FastAPI,HTTPException
+from dotenv import load_dotenv
 import pandas as pd
 import numpy as np
 import datetime
-# from pydantic import BaseModel
+import psycopg2
+import os
+import json
 
 # instalar en el entorno virtual 
 # pip install fastapi
-# pip install gTTs
 # pip install requests
 # pip install numpy
+# pip install pandas
+# pip install psycopg2
+# pip install python-dotenv
 # pip install "uvicorn[standard]" 
+
+# en solo dos comandos
+# pip install fastapi python-dotenv pandas numpy psycopg2
+# pip install "uvicorn[standard]"
 
 # to run app es:  uvicorn nombre_archivo:app --reload
 
+load_dotenv()
+
+def connect_db():
+    return psycopg2.connect(
+        database=os.getenv("DB_NAME"),
+        user=os.getenv("DB_USERNAME"),
+        password=os.getenv("DB_PASSWORD"), 
+        host=os.getenv("DB_HOST"),
+        port=os.getenv("DB_PORT")
+    )
 app = FastAPI()
+
 
 @app.get("/")
 def root():
      return """
-    <h1>Welcome / Bienvenido / Bienvenu</h1>
-    <p>For view documentation navigate to <a href="localhost/documets">/docs</a></p>
+    Welcome / Bienvenido / Bienvenu \n
+    For view documentation navigate to 'localhost:8000/docs'
     """
 
 @app.get("/recommendations/{adv}/{model}")
 def get_recommendations(adv: str, model: str):
-    # Leer el archivo de advertiser_ids
-    df_adv = pd.read_csv('files/advertiser_ids.csv')
-    # Verificar que adv está en advertiser_id
-    if adv not in df_adv['advertiser_id'].values:
-        raise HTTPException(status_code=404, detail= f"Advertiser {adv} not foun as active")
-    # Verificar que el modelo es válido
     if model not in ['product', 'ctr']:
         raise HTTPException(status_code=404, detail= "Invalid model - Only accept 'product' or 'ctr'")
     try:
-        # Leer el archivo CSV
-        if model == 'product':
-            file_name = f"files/active/top_product_{datetime.datetime.now().strftime('%Y-%m-%d')}.csv"
-        else:
-            file_name = f"files/active/top_ctr_{datetime.datetime.now().strftime('%Y-%m-%d')}.csv"
-        df = pd.read_csv(file_name)
-        df = df[df['advertiser_id'] == adv]
-        # Convertir el DataFrame a un diccionario y devolverlo
-        return df.to_dict(orient='records')
-    except FileNotFoundError:
+        engine = connect_db()
+    except psycopg2.OperationalError:
+        return {"error": "Database connection error"}
+    cursor = engine.cursor()
+    cursor.execute(f"""SELECT * FROM {model} WHERE advertiser_id = '{adv}';""")
+    rows = cursor.fetchall()
+    if  len(rows) == 0:
+        raise HTTPException(status_code=404, detail= f"Advertiser '{adv}' not foun as active")
+    # Verificar que el modelo es válido
+    try:
+        cursor.execute(f"""SELECT * FROM {model} WHERE advertiser_id = '{adv}' AND date = TO_DATE(%s, 'YYYY-MM-DD')""", (datetime.datetime.now().strftime('%Y-%m-%d'),))
+        rows = cursor.fetchall()
+        # Convertir el rows a un Json y devolverlo
+        json_rows = json.dumps(rows, default=str)
+        return json_rows
+    except psycopg2.errors.NoDataFound:
         return {"error": f"No data found for adv {adv} and model {model}"}
     
-@app.get("/stats/")
-def item(item_id: int):
-    return {"item_id": item_id}
+@app.get("/stats/{model}")
+def adv(model: str):
+    if model not in ['product', 'ctr']:
+        raise HTTPException(status_code=404, detail= "Invalid model - Only accept 'product' or 'ctr'")
+    with connect_db() as engine:
+        with engine.cursor() as cursor:
+            try: 
+                cursor.execute(f"""SELECT COUNT (advertiser_id) FROM {model} WHERE date = TO_DATE(%s, 'YYYY-MM-DD')""", (datetime.datetime.now().strftime('%Y-%m-%d'),))
+            except psycopg2.errors.NoDataFound:
+                return {"error": f"No data found for model {model}"}
+            engine.commit()
+
+    return
 
 @app.get("/history/{adv}")
 def rand(min: int = 0, max: int = 10):
@@ -91,3 +121,7 @@ def rand(min: int = 0, max: int = 10):
 # # >>> tts = gTTS('hello')
 # # >>> tts.save('hello.mp3')
     
+
+# 0MJGNPL5TP85CMYP807Y product
+
+# 1GYAS7HDPACX993P201R ctr

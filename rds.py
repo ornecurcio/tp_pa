@@ -22,36 +22,42 @@ cursor = engine.cursor()
 #                     PRIMARY KEY (date, advertiser_id, product_id)
 #                     );
 #                """)
-cursor.execute("""
-               CREATE TABLE IF NOT EXISTS ctr ( 
-                    date DATE,
-                    advertiser_id VARCHAR(255),
-                    product_id VARCHAR(255),
-                    impressions FLOAT,
-                    clicks FLOAT,
-                    CTR FLOAT,
-                    PRIMARY KEY (date, advertiser_id, product_id)
-                    );
-               """)
+# cursor.execute("""
+#                CREATE TABLE IF NOT EXISTS ctr ( 
+#                     date DATE,
+#                     advertiser_id VARCHAR(255),
+#                     product_id VARCHAR(255),
+#                     impressions FLOAT,
+#                     clicks FLOAT,
+#                     CTR FLOAT,
+#                     PRIMARY KEY (date, advertiser_id, product_id)
+#                     );
+#                """)
 # Extraer la fecha del nombre del archivo
-file_name = 'files/top_ctr_test_2024-04-30.csv'
-date = os.path.splitext(file_name)[0].split('_')[-1]  # '2024-04-30'
+# file_name = 'files/top_ctr_test_2024-04-30.csv'
+# date = os.path.splitext(file_name)[0].split('_')[-1]  # '2024-04-30'
 # print(date)
 
 #Leer el archivo CSV
 
-df1 = pd.read_csv(file_name)
-insert_query = 'INSERT INTO ctr (date, advertiser_id, product_id, impressions, clicks, CTR) VALUES (%s, %s, %s, %s, %s, %s)'
-for index, row in df1.iterrows():
-    cursor.execute(insert_query, (date, row['advertiser_id'], row['product_id'], row['impressions'], row['clicks'], row['CTR']))
+# df1 = pd.read_csv(file_name)
+# insert_query = 'INSERT INTO ctr (date, advertiser_id, product_id, impressions, clicks, CTR) VALUES (%s, %s, %s, %s, %s, %s)'
+# for index, row in df1.iterrows():
+#     cursor.execute(insert_query, (date, row['advertiser_id'], row['product_id'], row['impressions'], row['clicks'], row['CTR']))
 
-engine.commit()
 
-cursor.execute("""SELECT * FROM ctr;""") 
+
+# cursor.execute("""SELECT * FROM product WHERE advertiser_id = 'alalcjkwfjkew' and date = TO_DATE(%s, 'YYYY-MM-DD');""", ('2024-05-01',)) 
+# cursor.execute("""DELETE FROM ctr;""")
+cursor.execute('SELECT * FROM ctr;')
 rows = cursor.fetchall()
 print('Primera query')
 print(rows)
-
+# cursor.execute("""SELECT * FROM ctr WHERE date = TO_DATE(%s, 'YYYY-MM-DD');""", ('2024-05-01',)) 
+# rows = cursor.fetchall()
+# print('Segunda query')
+# print(rows)
+engine.commit()
 cursor.close()
 engine.close()
 
