@@ -20,7 +20,7 @@ import json
 # pip install fastapi python-dotenv pandas numpy psycopg2
 # pip install "uvicorn[standard]"
 
-# to run app es:  uvicorn nombre_archivo:app --reload
+# to run app es:  uvicorn apiTp:app --reload
 
 load_dotenv()
 
@@ -76,7 +76,14 @@ def adv(model: str):
             except psycopg2.errors.NoDataFound:
                 return {"error": f"No data found for model {model}"}
             engine.commit()
+    return
 
+@app.get("/stats/{varianza}")
+def algo():
+    return
+
+@app.get("/stats/{adv}/{model}")
+def algo():
     return
 
 @app.get("/history/{adv}")
