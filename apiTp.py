@@ -59,9 +59,34 @@ def get_recommendations(adv: str, model: str):
     try:
         cursor.execute(f"""SELECT * FROM {model} WHERE advertiser_id = '{adv}' AND date = TO_DATE(%s, 'YYYY-MM-DD')""", (datetime.datetime.now().strftime('%Y-%m-%d'),))
         rows = cursor.fetchall()
+        if len(rows) == 0:
+            return {"error": f"No data found for adv {adv} and model {model}"}
+        json_results = []
+        if model == 'ctr':
+            for result in rows:
+                result_dict = {
+                    "date": result[0].isoformat(),
+                    "advertiser_id": result[1],
+                    "publisher_id": result[2],
+                    "impressions": result[3],
+                    "clicks": result[4],
+                    "CTR": result[5]
+                }
+                json_results.append(result_dict)
+        else:
+            for result in rows:
+                result_dict = {
+                    "date": result[0].isoformat(),
+                    "advertiser_id": result[1],
+                    "product_id": result[2],
+                    "count": result[3]
+                }
+                json_results.append(result_dict)
+        return json_results
+        # json.dumps(json_results, indent=4)
         # Convertir el rows a un Json y devolverlo
-        json_rows = json.dumps(rows, default=str)
-        return json_rows
+        # json_rows = json.dumps(rows, default=str)
+        # return json_rows
     except psycopg2.errors.NoDataFound:
         return {"error": f"No data found for adv {adv} and model {model}"}
     

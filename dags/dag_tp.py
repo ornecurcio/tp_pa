@@ -1,9 +1,10 @@
 import datetime
 import numpy as np
 import pandas as pd
-from dotenv import load_dotenv 
+import boto3
 import os
 import psycopg2
+from dotenv import load_dotenv 
 from airflow.models.dag import DAG
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
@@ -12,12 +13,19 @@ from airflow.utils.task_group import TaskGroup
 
 with DAG(
     dag_id='filtrar_datos',
-    schedule='0 4 * * *',
+    schedule='0 7 * * *',
     start_date=datetime.datetime(2024, 4, 1),
     catchup=False,
 ) as dag:
 
     load_dotenv()
+    s3 = boto3.client(
+            's3',
+            region_name='us-east-2',
+            aws_access_key_id= os.getenv("ACCESS_KEY"),
+            aws_secret_access_key= os.getenv("SECRET_KEY")
+        )
+
     def connect_db():
         return psycopg2.connect(
             database=os.getenv("DB_NAME"),
@@ -28,9 +36,11 @@ with DAG(
         )
 
     def join_csv(date, file1, file2, **context):
+        df1 = s3.get_object(Bucket = os.getenv("BUCKET_NAME"), Key = file1)
+        df2 = s3.get_object(Bucket = os.getenv("BUCKET_NAME"), Key = file2)
         # Leer los archivos CSV
-        df1 = pd.read_csv(file1)
-        df2 = pd.read_csv(file2)
+        df1 = pd.read_csv(df1['Body'])
+        df2 = pd.read_csv(df2['Body'])
         # Unir los DataFrames
         df = pd.merge(df1, df2, on='advertiser_id')
         # Filtrar por fecha
@@ -70,9 +80,9 @@ with DAG(
     filter_data_product = PythonOperator(
     task_id='product_active',
     python_callable=join_csv,
-    op_kwargs={'date': f"{datetime.datetime.now().strftime('%Y-%m-%d')}",
-            'file1': '/Users/ocurcio/Documents/MasterDataScience/ProgramacionAvanzada/TP/files/advertiser_ids.csv', 
-            'file2': '/Users/ocurcio/Documents/MasterDataScience/ProgramacionAvanzada/TP/files/product_views.csv'},
+    op_kwargs={'date': f"{datetime.datetime.now().strftime('%Y-%m-%d')}", 
+            'file1' : 'advertiser_ids.csv', 
+            'file2' : 'product_views.csv'},
     provide_context=True  # Necesario para acceder a task_instance
     )
 
@@ -130,8 +140,8 @@ with DAG(
         task_id='ads_active',
         python_callable=join_csv,
         op_kwargs={'date': f"{datetime.datetime.now().strftime('%Y-%m-%d')}",
-                   'file1': '/Users/ocurcio/Documents/MasterDataScience/ProgramacionAvanzada/TP/files/advertiser_ids.csv', 
-                   'file2': '/Users/ocurcio/Documents/MasterDataScience/ProgramacionAvanzada/TP/files/ads_views.csv'},
+                   'file1': 'advertiser_ids.csv', 
+                   'file2': 'ads_views.csv'},
         provide_context=True  # Necesario para acceder a task_instance
     )
     top_ctr_task = PythonOperator(
@@ -145,5 +155,7 @@ with DAG(
         provide_context=True
     )
     filter_data_ads >> top_ctr_task >> write_ctr_db
+
+    
     
     

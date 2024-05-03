@@ -47,9 +47,10 @@ cursor = engine.cursor()
 
 
 
-# cursor.execute("""SELECT * FROM product WHERE advertiser_id = 'alalcjkwfjkew' and date = TO_DATE(%s, 'YYYY-MM-DD');""", ('2024-05-01',)) 
+cursor.execute("""SELECT * FROM ctr WHERE date = TO_DATE(%s, 'YYYY-MM-DD');""", ('2024-05-02',)) 
+
 # cursor.execute("""DELETE FROM ctr;""")
-cursor.execute('SELECT * FROM ctr;')
+# cursor.execute('SELECT DISTINCT date FROM ctr;')
 rows = cursor.fetchall()
 print('Primera query')
 print(rows)

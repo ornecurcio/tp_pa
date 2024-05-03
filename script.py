@@ -82,11 +82,27 @@ def top_ctr(input):
 
     # Escribir el top product en la base de datos
 
-file1 = "files/advertiser_ids.csv"
-file3 = "files/ads_views.csv"
-output_file_active_ads = "files/ads_active_test.csv"
-join_csv(file1, file3,output_file_active_ads)
-top_ctr(output_file_active_ads)
+
+import boto3
+import os
+import pandas as pd
+load_dotenv()
+ACCESS_KEY = os.getenv("ACCESS_KEY")
+SECRET_KEY = os.getenv("SECRET_KEY")
+s3 = boto3.client(
+'s3',
+region_name='us-east-1',
+aws_access_key_id=ACCESS_KEY,
+aws_secret_access_key=SECRET_KEY)
+bucket_name = os.getenv("BUCKET_NAME")
+file_name = 'advertiser_ids.csv'
+file_object = s3.get_object(Bucket=bucket_name, Key=file_name)
+df = pd.read_csv(file_object['Body'])
+print(df)
+# file1 = "advertiser_ids.csv"
+# file3 = "ads_views.csv"
+
+
 
 
 
