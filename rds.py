@@ -52,7 +52,25 @@ cursor = engine.cursor()
 # cursor.execute("""DELETE FROM ctr;""")
 # cursor.execute('SELECT DISTINCT date FROM ctr;')
 # cursor.execute("""SELECT Distinct advertiser_id FROM ctr WHERE date = TO_DATE(%s, 'YYYY-MM-DD');""", ('2024-05-03',))
-cursor.execute(f"""SELECT COUNT (advertiser_id) FROM ctr WHERE date = TO_DATE(%s, 'YYYY-MM-DD') groupby advertiser_id""", ('2024-05-03',))
+cursor.execute("""
+    SELECT *
+    FROM ctr 
+    """,)
+
+#SELECT advertiser_id, COUNT(*)
+#GROUP BY advertiser_id
+
+#WHERE date = TO_DATE(%s, 'YYYY-MM-DD') 
+#    """, ('2024-05-03',))
+# Obtener los resultados de la consulta
+results = cursor.fetchall()
+
+# Convertir los resultados en un DataFrame
+df = pd.DataFrame(results, columns=[desc[0] for desc in cursor.description])
+
+df.to_csv("test.csv")
+
+#WHERE date = TO_DATE(%s, 'YYYY-MM-DD') groupby advertiser_id""", ('2024-05-03',))
 # (LXH5XTBJTBCH8IRH3B0)
 rows = cursor.fetchall()
 print('Primera query')

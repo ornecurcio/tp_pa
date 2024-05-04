@@ -97,18 +97,62 @@ def adv(model: str):
     with connect_db() as engine:
         with engine.cursor() as cursor:
             try: 
-                cursor.execute(f"""SELECT COUNT (advertiser_id) FROM {model} WHERE date = TO_DATE(%s, 'YYYY-MM-DD')""", (datetime.datetime.now().strftime('%Y-%m-%d'),))
+                cursor.execute(f"SELECT COUNT(DISTINCT advertiser_id) FROM {model}")
+                num_advertisers = cursor.fetchall()
+                if len(num_advertisers) == 0:
+                    return {"error": f"No data found for model {model}"}
+                return {"resultado": f"The number of different advertisers for {model} is {num_advertisers}"}
             except psycopg2.errors.NoDataFound:
                 return {"error": f"No data found for model {model}"}
+
+@app.get("/stats/{model}")
+def varia(model: str):
+    if model not in ['product', 'ctr']:
+        raise HTTPException(status_code=404, detail= "Invalid model - Only accept 'product' or 'ctr'")
+    with connect_db() as engine:
+        with engine.cursor() as cursor:
+            try: 
+                cursor.execute("""
+                                SELECT advertiser_id, COUNT(DISTINCT date) AS days_count
+                                FROM {model}
+                                GROUP BY advertiser_id
+                                ORDER BY days_count DESC
+                                """)
+                advertisers_variability = cursor.fetchall()
+                if len(advertisers_variability) == 0:
+                    return {"error": f"No data found for model {model}"}
+                if model == 'ctr':
+                    {"resultado": f"The advertisers that vary from day to day are" & advertisers_variability }
+            except psycopg2.errors.NoDataFound:
+                return {"error": f"No data found for model {model}"}
+                json_results.append(result_dict)
+            return json_results
             engine.commit()
     return
 
-@app.get("/stats/{varianza}")
-def algo():
-    return
-
 @app.get("/stats/{adv}/{model}")
-def algo():
+def varia(model: str):
+    if model not in ['product', 'ctr']:
+        raise HTTPException(status_code=404, detail= "Invalid model - Only accept 'product' or 'ctr'")
+    with connect_db() as engine:
+        with engine.cursor() as cursor:
+            try: 
+                cursor.execute("""
+                SELECT product_id, COUNT(DISTINCT advertiser_id) AS advertisers_count
+                FROM ctr
+                GROUP BY product_id
+                HAVING COUNT(DISTINCT advertiser_id) > 1
+                ORDER BY advertisers_count DESC
+                """)
+                product_overlap_stats = cursor.fetchall()
+                if len(product_overlap_stats) == 0:
+                    return {"error": f"No data found for model {model}"}
+                if model == 'ctr':
+                    {"resultado": f"The overlapping products are" & product_overlap_stats }
+            except psycopg2.errors.NoDataFound:
+                return {"error": f"No data found for model {model}"}
+            return json_results
+            engine.commit()
     return
 
 @app.get("/history/{adv}")
