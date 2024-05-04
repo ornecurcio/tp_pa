@@ -1,0 +1,94 @@
+[
+    {
+        "date": "2024-05-01",
+        "advertiser_id": "1GYAS7HDPACX993P201R",
+        "publisher_id": "y75ut0",
+        "impressions": 1.0,
+        "clicks": 1.0,
+        "CTR": 100.0
+    },
+    {
+        "date": "2024-05-01",
+        "advertiser_id": "1GYAS7HDPACX993P201R",
+        "publisher_id": "v4mht3",
+        "impressions": 1.0,
+        "clicks": 1.0,
+        "CTR": 100.0
+    },
+    {
+        "date": "2024-05-01",
+        "advertiser_id": "1GYAS7HDPACX993P201R",
+        "publisher_id": "uq1z1v",
+        "impressions": 1.0,
+        "clicks": 1.0,
+        "CTR": 100.0
+    },
+    {
+        "date": "2024-05-01",
+        "advertiser_id": "1GYAS7HDPACX993P201R",
+        "publisher_id": "tq1z1v",
+        "impressions": 1.0,
+        "clicks": 1.0,
+        "CTR": 100.0
+    },
+    {
+        "date": "2024-05-01",
+        "advertiser_id": "1GYAS7HDPACX993P201R",
+        "publisher_id": "sq1z1v",
+        "impressions": 1.0,
+        "clicks": 1.0,
+        "CTR": 100.0
+    },
+    {
+        "date": "2024-05-01",
+        "advertiser_id": "1GYAS7HDPACX993P201R",
+        "publisher_id": "rq1z1v",
+        "impressions": 1.0,
+        "clicks": 1.0,
+        "CTR": 100.0
+    },
+    {
+        "date": "2024-05-01",
+        "advertiser_id": "1GYAS7HDPACX993P201R",
+        "publisher_id": "pq1z1v",
+        "impressions": 1.0,
+        "clicks": 1.0,
+        "CTR": 100.0
+    },
+    {
+        "date": "2024-05-01",
+        "advertiser_id": "1GYAS7HDPACX993P201R",
+        "publisher_id": "oq1z1v",
+        "impressions": 1.0,
+        "clicks": 1.0,
+        "CTR": 100.0
+    },
+    {
+        "date": "2024-05-01",
+        "advertiser_id": "1GYAS7HDPACX993P201R",
+        "publisher_id": "nq1z1v",
+        "impressions": 1.0,
+        "clicks": 1.0,
+        "CTR": 100.0
+    }
+]
+[(datetime.date(2024, 5, 1), '1GYAS7HDPACX993P201R', 'y75ut0', 1.0, 1.0, 100.0), 
+(datetime.date(2024, 5, 1), '1GYAS7HDPACX993P201R', 'v4mht3', 1.0, 1.0, 100.0), 
+(datetime.date(2024, 5, 1), '1GYAS7HDPACX993P201R', '00hfgd', 3.0, 0.0, 0.0), 
+(datetime.date(2024, 5, 1), '1GYAS7HDPACX993P201R', 'kbq27x', 2.0, 0.0, 0.0), 
+(datetime.date(2024, 5, 1), '1GYAS7HDPACX993P201R', 'pod8cd', 3.0, 0.0, 0.0),
+(datetime.date(2024, 5, 1), '1GYAS7HDPACX993P201R', 'pfdupb', 2.0, 0.0, 0.0), 
+(datetime.date(2024, 5, 1), '1GYAS7HDPACX993P201R', 'p719ol', 3.0, 0.0, 0.0), 
+(datetime.date(2024, 5, 1), '1GYAS7HDPACX993P201R', 'o99sn5', 3.0, 0.0, 0.0), 
+(datetime.date(2024, 5, 1), '1GYAS7HDPACX993P201R', 'o18al4', 2.0, 0.0, 0.0), 
+(datetime.date(2024, 5, 1), '1GYAS7HDPACX993P201R', 'nhxctr', 3.0, 0.0, 0.0), 
+(datetime.date(2024, 5, 1), '1GYAS7HDPACX993P201R', 'kwkomh', 2.0, 0.0, 0.0), 
+(datetime.date(2024, 5, 1), '1GYAS7HDPACX993P201R', 'k7yhk9', 2.0, 0.0, 0.0), 
+(datetime.date(2024, 5, 1), '1GYAS7HDPACX993P201R', 'prkip9', 1.0, 0.0, 0.0), 
+(datetime.date(2024, 5, 1), '1GYAS7HDPACX993P201R', 'k4kc7p', 3.0, 0.0, 0.0), 
+(datetime.date(2024, 5, 1), '1GYAS7HDPACX993P201R', 'im952t', 1.0, 0.0, 0.0), 
+(datetime.date(2024, 5, 1), '1GYAS7HDPACX993P201R', 'i0kvgh', 1.0, 0.0, 0.0), 
+(datetime.date(2024, 5, 1), '1GYAS7HDPACX993P201R', 'hklgzw', 2.0, 0.0, 0.0), 
+(datetime.date(2024, 5, 1), '1GYAS7HDPACX993P201R', 'hf00m4', 2.0, 0.0, 0.0), 
+(datetime.date(2024, 5, 1), '1GYAS7HDPACX993P201R', 'h2bu0v', 1.0, 0.0, 0.0), 
+(datetime.date(2024, 5, 1), '1GYAS7HDPACX993P201R', 'h09qpe', 2.0, 0.0, 0.0)]

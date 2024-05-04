@@ -47,10 +47,13 @@ cursor = engine.cursor()
 
 
 
-cursor.execute("""SELECT * FROM ctr WHERE date = TO_DATE(%s, 'YYYY-MM-DD');""", ('2024-05-02',)) 
+#cursor.execute("""SELECT * FROM ctr WHERE date = TO_DATE(%s, 'YYYY-MM-DD');""", ('2024-05-02',)) 
 
 # cursor.execute("""DELETE FROM ctr;""")
 # cursor.execute('SELECT DISTINCT date FROM ctr;')
+# cursor.execute("""SELECT Distinct advertiser_id FROM ctr WHERE date = TO_DATE(%s, 'YYYY-MM-DD');""", ('2024-05-03',))
+cursor.execute(f"""SELECT COUNT (advertiser_id) FROM ctr WHERE date = TO_DATE(%s, 'YYYY-MM-DD') groupby advertiser_id""", ('2024-05-03',))
+# (LXH5XTBJTBCH8IRH3B0)
 rows = cursor.fetchall()
 print('Primera query')
 print(rows)

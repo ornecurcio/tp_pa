@@ -50,17 +50,15 @@ with DAG(
         context['task_instance'].xcom_push('data', df.to_json())
 
     def top_product(**context):
-        # Traer el DataFrame de XComs
+        # Traer los datos de XCom
         df_json = context['task_instance'].xcom_pull(task_ids='product_active', key='data')
         df = pd.read_json(df_json)
-        # Calcular el top 20 de productos por cada advertiser_id
         def get_top_20_products(group):
             return group.sort_values('count', ascending=False).head(20)
 
         result = df.groupby(['date', 'advertiser_id', 'product_id']).size().reset_index(name='count')
         top_20_per_advertiser = result.groupby('advertiser_id').apply(get_top_20_products)
 
-        # Debido a la naturaleza de 'apply', los índices podrían necesitar un ajuste.
         top_20_per_advertiser = top_20_per_advertiser.reset_index(drop=True)
         print(top_20_per_advertiser)
         context['task_instance'].xcom_push('data', top_20_per_advertiser.to_json())
