@@ -34,7 +34,6 @@ def connect_db():
     )
 app = FastAPI()
 
-
 @app.get("/")
 def root():
      return """
@@ -83,10 +82,6 @@ def get_recommendations(adv: str, model: str):
                 }
                 json_results.append(result_dict)
         return json_results
-        # json.dumps(json_results, indent=4)
-        # Convertir el rows a un Json y devolverlo
-        # json_rows = json.dumps(rows, default=str)
-        # return json_rows
     except psycopg2.errors.NoDataFound:
         return {"error": f"No data found for adv {adv} and model {model}"}
     

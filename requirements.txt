@@ -1,0 +1,7 @@
+pandas==1.4.2
+numpy==1.26.4
+fastapi
+requests
+psycopg2
+python-dotenv
+uvicorn[standard]
