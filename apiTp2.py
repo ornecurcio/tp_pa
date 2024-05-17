@@ -1,5 +1,7 @@
 from fastapi import FastAPI,HTTPException
 from dotenv import load_dotenv
+from datetime import datetime, timedelta
+import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import datetime
@@ -81,11 +83,12 @@ def get_recommendations(adv: str, model: str):
                     "count": result[3]
                 }
                 json_results.append(result_dict)
+        engine.commit()
         return json_results
     except psycopg2.errors.NoDataFound:
         return {"error": f"No data found for adv {adv} and model {model}"}
     
-@app.get("/stats/{model}")
+"""@app.get("/stats/{model}")
 def adv(model: str):
     if model not in ['product', 'ctr']:
         raise HTTPException(status_code=404, detail= "Invalid model - Only accept 'product' or 'ctr'")
@@ -98,7 +101,7 @@ def adv(model: str):
                     return {"error": f"No data found for model {model}"}
                 return {"resultado": f"The number of different advertisers for {model} is {num_advertisers}"}
             except psycopg2.errors.NoDataFound:
-                return {"error": f"No data found for model {model}"}
+                return {"error": f"No data found for model {model}"}"""
 
 @app.get("/stats/{model}")
 def varia(model: str):
@@ -112,14 +115,19 @@ def varia(model: str):
                                 FROM {model}
                                 GROUP BY advertiser_id
                                 ORDER BY days_count DESC
-                                """)
+                                """.format(model))
                 advertisers_variability = cursor.fetchall()
                 if len(advertisers_variability) == 0:
                     return {"error": f"No data found for model {model}"}
                 if model == 'ctr':
-                    {"resultado": f"The advertisers that vary from day to day are" & advertisers_variability }
+                    return {"resultado": f"The advertisers that vary from day to day are" & advertisers_variability }
+            # Aquí devuelves los resultados en forma de JSON
+                return {"data": advertisers_variability}
             except psycopg2.errors.NoDataFound:
                 return {"error": f"No data found for model {model}"}
+#            json_results.append(result_dict)
+#            engine.commit()
+#            return json_results
 
 @app.get("/stats/{adv}/{model}")
 def varia(model: str):
@@ -134,25 +142,123 @@ def varia(model: str):
                 GROUP BY product_id
                 HAVING COUNT(DISTINCT advertiser_id) > 1
                 ORDER BY advertisers_count DESC
-                """)
+                """.format(model))
                 product_overlap_stats = cursor.fetchall()
-                return product_overlap_stats
                 if len(product_overlap_stats) == 0:
                     return {"error": f"No data found for model {model}"}
                 if model == 'ctr':
-                    {"resultado": f"The overlapping products are" & product_overlap_stats }
+                    return {"resultado": f"The overlapping products are", "data": product_overlap_stats}
             except psycopg2.errors.NoDataFound:
-                return {"error": f"No data found for model {model}"}
-            
-            engine.commit()
-    return
+#                return {"error": f"No data found for model {model}"}
+#            return json_results
+#            engine.commit()
+    #return
 
-@app.get("/history/{adv}")
-def rand(min: int = 0, max: int = 10):
-    return f'Random number: {np.random.randint(min+1, max+1)}'
+#@app.get("/history/{adv}")
+#def rand(min: int = 0, max: int = 10):
+#    return f'Random number: {np.random.randint(min+1, max+1)}'
+
+## Histograma
+@app.get("/history/{advertiser_id}/")
+async def get_advertiser_history(advertiser_id: int):
+    # Calcular la fecha hace 7 días
+    seven_days_ago = datetime.now() - timedelta(days=7)
+
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT 
+            DATE(recommendation_date) AS recommendation_day, 
+            COUNT(*) AS recommendation_count
+        FROM 
+            recommendations
+        WHERE 
+            advertiser_id = %s 
+            AND recommendation_date >= %s
+        GROUP BY 
+            recommendation_day
+        ORDER BY 
+            recommendation_day
+    """, (advertiser_id, seven_days_ago))
+
+    results = cursor.fetchall()
+    cursor.close()
+
+    return results
 
 
+@app.get("/history/{advertiser_id}/")
+async def get_advertiser_history(advertiser_id: int):
+    # Calcular la fecha hace 7 días
+    seven_days_ago = datetime.now() - timedelta(days=7)
 
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT 
+            advertiser_id, 
+            product_id, 
+            recommendation_date
+        FROM 
+            recommendations
+        WHERE 
+            advertiser_id = %s 
+            AND recommendation_date >= %s
+    """, (advertiser_id, seven_days_ago))
+
+    results = cursor.fetchall()
+    cursor.close()
+
+    advertiser_history = []
+    for row in results:
+        recommendation = {
+            "advertiser_id": row[0],
+            "product_id": row[1],
+            "recommendation_date": row[2].strftime("%Y-%m-%d %H:%M:%S")
+        }
+        advertiser_history.append(recommendation)
+
+    return advertiser_history
+
+## Stat extra - CTR promedio por advertiser
+def get_average_ctr():
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT 
+            advertiser_id, 
+            AVG(ctr) AS avg_ctr
+        FROM 
+            ctr_data
+        GROUP BY 
+            advertiser_id
+    """)
+    results = cursor.fetchall()
+
+    avg_ctr_per_advertiser = {row[0]: row[1] for row in results}
+
+    cursor.close()
+
+    return avg_ctr_per_advertiser
+
+def plot_ctr_histogram(ctr_data):
+    plt.hist(ctr_data.values(), bins=10, color='skyblue', edgecolor='black')
+    plt.xlabel('CTR')
+    plt.ylabel('Frecuencia')
+    plt.title('Distribución del CTR Promedio por Advertiser')
+    plt.grid(True)
+    plt.show()
+
+@app.get("/stats/")
+async def get_stats():
+    avg_ctr_per_advertiser = get_average_ctr()
+    plot_ctr_histogram(avg_ctr_per_advertiser)
+    
+    # También puedes incluir otras estadísticas aquí
+
+    # Formatea los resultados en un diccionario JSON
+    stats = {
+        "avg_ctr_per_advertiser": avg_ctr_per_advertiser,
+        # Agrega otras estadísticas aquí
+    }
+    return stats
 
 # @app.get("/{int}")
 # def rand(min: int = 0, max: int = 10):

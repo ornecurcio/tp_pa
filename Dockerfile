@@ -1,10 +1,16 @@
-FROM python:3.9
+FROM  python:3.10-slim-bullseye
 
 WORKDIR /TP
 
 COPY requirements.txt .
+# Asume que estás usando una imagen base de Debian/Ubuntu
+RUN apt-get update && apt-get install -y gcc
 # otro copy con el codigo de la api
 RUN pip install -r requirements.txt
 
+COPY apiTp.py .
+
 # el entry poin o comand es ubicorn
-ENTRYPOINT ["jupyter", "notebook", "--port=8231", "--ip=0.0.0.0", "--allow-root"]
+# el comando es ubicorn apiTp:app 
+CMD ["uvicorn", "apiTp:app", "--host", "0.0.0.0", "--port", "8000"]
+
