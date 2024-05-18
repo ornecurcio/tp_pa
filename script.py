@@ -1,23 +1,10 @@
-# import requests
-# import json
-
-# response = requests.get('http://127.0.0.1:8000/recomendations/HDXVWMQ53JJC0BY84N3E/product')
-
-import datetime
-import numpy as np
 import pandas as pd
 from dotenv import load_dotenv 
 import os
 import psycopg2
-from airflow.models.dag import DAG
-from airflow.operators.bash import BashOperator
-from airflow.operators.python import PythonOperator
-from airflow.operators.empty import EmptyOperator
-from airflow.utils.task_group import TaskGroup
-
-
 
 load_dotenv()
+
 engine = psycopg2.connect(
     database=os.getenv("DB_NAME"),
     user=os.getenv("DB_USERNAME"),
