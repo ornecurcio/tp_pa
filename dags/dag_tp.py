@@ -4,6 +4,8 @@ import pandas as pd
 import boto3
 import os
 import psycopg2
+from datetime import timedelta
+from io import StringIO
 from dotenv import load_dotenv 
 from airflow.models.dag import DAG
 from airflow.operators.bash import BashOperator
@@ -45,17 +47,35 @@ with DAG(
             print(f"An error occurred while reading the file {file_name} from S3: {e}")
             return pd.DataFrame()
 
-    def join_csv(date, file1, file2, **context):
+    def write_csv_to_s3(df, file_name):
+        try:
+            csv_buffer = StringIO()
+            df.to_csv(csv_buffer)
+            s3.put_object(Bucket=os.getenv("BUCKET_NAME"), Key=file_name, Body=csv_buffer.getvalue())
+            print(f"File {file_name} saved to S3 successfully.")
+        except Exception as e:
+            print(f"An error occurred while writing the file {file_name} to S3: {e}")
+
+    def join_csv(file1, file2, **context):
         df1 = read_csv_from_s3(file1)
         df2 = read_csv_from_s3(file2)
         # Unir los DataFrames
         try:
             df = pd.merge(df1, df2, on='advertiser_id')
+            date = (context['execution_date'] - timedelta(days=1)).strftime('%Y-%m-%d')
+            # date = context['execution_date'].strftime('%Y-%m-%d')
             # Filtrar por fecha
             df = df[df['date'] == date]
-            print(df.head())
+            df = df.reset_index(drop=True)
             # Empujar el DataFrame en XComs
-            context['task_instance'].xcom_push('data', df.to_json())
+            # context['task_instance'].xcom_push('data', df.to_json())
+            # Crear el nombre del archivo basado en file3 y la fecha de ejecución del DAG
+            file2 = file2.split(".")[0]
+            file_name = f"{file2}_{date}.csv"
+            # Guardar el DataFrame en un archivo CSV en S3
+            write_csv_to_s3(df, file_name)
+            # print(df.head())
+            print(df.columns)
         except Exception as e:
             print(f"An error occurred while joining the DataFrames: {e}")
 
@@ -66,13 +86,16 @@ with DAG(
         return df.groupby(['date', 'advertiser_id', 'product_id']).size().reset_index(name='count')
 
     def top_product(**context):
-        df_json = context['task_instance'].xcom_pull(task_ids='product_active', key='data')
-        df = pd.read_json(df_json)
+        df = read_csv_from_s3(f"product_views_{(context['execution_date'] - timedelta(days=1)).strftime('%Y-%m-%d')}.csv")
+        # df = read_csv_from_s3(f"product_views_{context['execution_date'].strftime('%Y-%m-%d')}.csv")
+        # df_json = context['task_instance'].xcom_pull(task_ids='product_active', key='data')
+        # df = pd.read_json(df_json)
         result = calculate_product_counts(df)
         top_20_per_advertiser = result.groupby('advertiser_id').apply(get_top_20_products)
         top_20_per_advertiser = top_20_per_advertiser.reset_index(drop=True)
+        # context['task_instance'].xcom_push('data', top_20_per_advertiser.to_json())
+        write_csv_to_s3(top_20_per_advertiser, f"top_products_{context['execution_date'].strftime('%Y-%m-%d')}.csv")
         print(top_20_per_advertiser)
-        context['task_instance'].xcom_push('data', top_20_per_advertiser.to_json())
 
     def get_top_20_ctr(group):
         return group.sort_values('CTR', ascending=False).head(20)
@@ -90,18 +113,23 @@ with DAG(
         return result.reset_index()
 
     def top_ctr(**context):
-        df_json = context['task_instance'].xcom_pull(task_ids='ads_active', key='data')
-        df = pd.read_json(df_json)
+        df = read_csv_from_s3(f"ads_views_{(context['execution_date'] - timedelta(days=1)).strftime('%Y-%m-%d')}.csv")
+        # df = read_csv_from_s3(f"ads_views_{context['execution_date'].strftime('%Y-%m-%d')}.csv")
+        # df_json = context['task_instance'].xcom_pull(task_ids='ads_active', key='data')
+        # df = pd.read_json(df_json)
         result = calculate_ctr(df)
         print(result)
         top_20_per_advertiser = result.groupby('advertiser_id').apply(get_top_20_ctr)
         top_20_per_advertiser = top_20_per_advertiser.reset_index(drop=True)
+        # context['task_instance'].xcom_push('data', top_20_per_advertiser.to_json())
+        write_csv_to_s3(top_20_per_advertiser, f"top_ctr_{(context['execution_date'] - timedelta(days=1)).strftime('%Y-%m-%d')}.csv")
         print(top_20_per_advertiser)
-        context['task_instance'].xcom_push('data', top_20_per_advertiser.to_json())
+       
         
     def write_product_to_db(**context):
-        df_json = context['task_instance'].xcom_pull(task_ids='top_product', key='data')
-        df = pd.read_json(df_json)
+        df = read_csv_from_s3(f"top_products_{(context['execution_date'] - timedelta(days=1)).strftime('%Y-%m-%d')}")
+        # df_json = context['task_instance'].xcom_pull(task_ids='top_product', key='data')
+        # df = pd.read_json(df_json)
         try:
             with connect_db() as engine:
                 with engine.cursor() as cursor:
@@ -118,8 +146,9 @@ with DAG(
             print(f"An error occurred while connecting to the database: {e}")
 
     def write_ctr_to_db(**context):
-        df_json = context['task_instance'].xcom_pull(task_ids='top_ctr', key='data')
-        df = pd.read_json(df_json)
+        df = read_csv_from_s3(f"top_ctr_{(context['execution_date'] - timedelta(days=1)).strftime('%Y-%m-%d')}")
+        # df_json = context['task_instance'].xcom_pull(task_ids='top_ctr', key='data')
+        # df = pd.read_json(df_json)
         try:
             with connect_db() as engine:
                 with engine.cursor() as cursor:
@@ -135,11 +164,10 @@ with DAG(
         except psycopg2.OperationalError as e:
             print(f"An error occurred while connecting to the database: {e}")
 
-
     filter_data_product = PythonOperator(
         task_id='product_active',
         python_callable=join_csv,
-        op_kwargs={'date': f"{datetime.datetime.now().strftime('%Y-%m-%d')}", 
+        op_kwargs={ 
                 'file1' : 'advertiser_ids.csv', 
                 'file2' : 'product_views.csv'},
         provide_context=True  
@@ -160,7 +188,7 @@ with DAG(
     filter_data_ads = PythonOperator(
         task_id='ads_active',
         python_callable=join_csv,
-        op_kwargs={'date': f"{datetime.datetime.now().strftime('%Y-%m-%d')}",
+        op_kwargs={
                    'file1': 'advertiser_ids.csv', 
                    'file2': 'ads_views.csv'},
         provide_context=True  
