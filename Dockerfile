@@ -1,5 +1,5 @@
 # Utiliza la imagen base de Python 3.10 sobre Debian slim
-FROM python:3.10-slim-bullseye
+FROM python:3.10
 
 # Establece el directorio de trabajo dentro del contenedor
 WORKDIR /TP
@@ -18,7 +18,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copia el resto del código fuente de la API al contenedor
 COPY apiTp.py .
 
+EXPOSE 80
 # Configura el comando por defecto para ejecutar la aplicación
 # Corrige el typo de "ubicorn" a "uvicorn"
-CMD ["uvicorn", "apiTp:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "apiTp:app", "--host", "0.0.0.0", "--port", "80"]
 

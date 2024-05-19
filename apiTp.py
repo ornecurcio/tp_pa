@@ -87,7 +87,7 @@ def get_recommendations(
     if model not in ['product', 'ctr']:
         raise HTTPException(status_code=404, detail="Invalid model specified. Only 'product' or 'ctr' are acceptable.")
     
-    target_date = date or (datetime.now() - timedelta(days=1)).date()
+    target_date = date or (datetime.now() - timedelta(days=2)).date()
     
     try:
         with connect_db() as conn:
@@ -182,8 +182,8 @@ def get_advertiser_count(model: str = Path(..., description="The model type, eit
 
 @app.get("/history/ctr/{advertiser_id}/")
 def get_ctr_advertiser_history(advertiser_id: str = Path(..., description="The ID of the advertiser", example="RALVMMRCZ047ZH6W3HMC")):
-    yesterday = datetime.now() - timedelta(days=1)
-    seven_days_ago = yesterday - timedelta(days=7)
+    yesterday = datetime.now() - timedelta(days=2)
+    seven_days_ago = yesterday - timedelta(days=9)
     try:
         with connect_db() as engine:
             with engine.cursor() as cursor:
@@ -210,8 +210,8 @@ def get_ctr_advertiser_history(advertiser_id: str = Path(..., description="The I
 
 @app.get("/history/product/{advertiser_id}/")
 def get_product_advertiser_history(advertiser_id: str = Path(..., description="The ID of the advertiser", example="RALVMMRCZ047ZH6W3HMC")):
-    yesterday = datetime.now() - timedelta(days=1)
-    seven_days_ago = yesterday - timedelta(days=7)
+    yesterday = datetime.now() - timedelta(days=2)
+    seven_days_ago = yesterday - timedelta(days=9)
     try:
         with connect_db() as engine:
             with engine.cursor() as cursor:
@@ -241,9 +241,9 @@ def unique_vs_repeated_recommendations_ctr(advertiser_id: str = Path(..., descri
                                            start_date: datetime = Query(None, description="Date for which data is to be fetched. Format: YYYY-MM-DD",example="2023-05-01"), 
                                            end_date: datetime = Query(None, description="Date for which data is to be fetched. Format: YYYY-MM-DD",example="2023-05-10")):
     if not start_date:
-        start_date = datetime.now() - timedelta(days=8)
+        start_date = datetime.now() - timedelta(days=9)
     if not end_date:
-        end_date = datetime.now() - timedelta(days=1)
+        end_date = datetime.now() - timedelta(days=2)
     try:
         with connect_db() as conn:
             with conn.cursor() as cursor:
