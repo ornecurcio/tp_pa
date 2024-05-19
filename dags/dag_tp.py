@@ -11,7 +11,7 @@ from airflow.models.dag import DAG
 from airflow.operators.python import PythonOperator
 
 with DAG(
-    dag_id='advertising_dag',
+    dag_id='advertiser_recomendations',
     schedule='0 0 * * *',
     start_date=datetime.datetime(2024, 4, 1),
     catchup=False,
